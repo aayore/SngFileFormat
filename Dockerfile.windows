@@ -1,0 +1,40 @@
+# Windows Dockerfile for SngTool testing
+# Note: Requires Windows host with Windows containers enabled
+
+# Use Windows Server Core as base (includes full .NET Framework)
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Install Chocolatey (Windows package manager)
+RUN powershell -Command \
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install .NET 10.0 SDK using Chocolatey
+RUN choco install dotnet-10.0-sdk -y
+
+# Install opus-tools using Chocolatey (optional)
+RUN choco install opus-tools -y
+
+# Set working directory
+WORKDIR C:/app
+
+# Copy project files
+COPY . .
+
+# Test commands
+RUN echo "=== Windows Container Test ===" && \
+    echo "Testing .NET installation..." && \
+    dotnet --version && \
+    echo "Testing opusenc..." && \
+    where opusenc && \
+    echo "Listing project files..." && \
+    dir SngTool
+
+# Build and test the project
+RUN cd SngTool && \
+    dotnet build -c Debug && \
+    echo "Build successful!" && \
+    dotnet run --project SngCli/SngCli.csproj -- --help
+
+CMD ["cmd", "/c", "echo Windows container test completed successfully!"]

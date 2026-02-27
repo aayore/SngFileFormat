@@ -1,0 +1,38 @@
+# Linux Dockerfile to test .NET build (works on macOS)
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+# Install opus-tools for Linux
+RUN apt-get update && apt-get install -y opus-tools
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . .
+
+# Test 1: Build the project
+RUN echo "=== Testing .NET build on Linux ===" && \
+    cd SngTool && \
+    dotnet build -c Debug && \
+    echo "✓ Build successful"
+
+# Test 2: Test CLI help
+RUN echo "=== Testing CLI tool ===" && \
+    cd SngTool && \
+    dotnet run --project SngCli/SngCli.csproj -- --help 2>&1 | grep -q "Usage:" && \
+    echo "✓ CLI tool works"
+
+# Test 3: Test Windows-specific build (cross-compilation)
+RUN echo "=== Testing Windows cross-compilation ===" && \
+    cd SngTool && \
+    dotnet publish SngCli/SngCli.csproj -c Release -r win-x64 --self-contained --output /tmp/win-build && \
+    echo "✓ Windows cross-compilation successful" && \
+    echo "Windows build size:" && \
+    du -sh /tmp/win-build
+
+# Test 4: Verify opusenc is available
+RUN echo "=== Testing opusenc ===" && \
+    opusenc --help 2>&1 | head -3 && \
+    echo "✓ opusenc available"
+
+CMD ["echo", "Linux build test completed successfully! The .NET code compiles for Windows target."]
