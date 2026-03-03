@@ -4,6 +4,21 @@
 
 This repository includes several components: a reference tool for converting SNG files to and from the designated format, the file specification, a registry of frequently used metadata keys, and a registry of file names.
 
+## Fork Information
+
+This repository was forked from the upstream with the explicit purpose of enabling macOS support and cross-platform compatibility.
+
+**Important Notes:**
+- AI was used to create Dockerfiles and tests for Linux and Windows builds
+- These automated builds and tests have not been manually verified
+- Use with caution in production environments
+- Manual testing is recommended before deployment
+
+The following automated test infrastructure was added:
+- Docker containers for Linux and Windows builds
+- Cross-platform build validation scripts
+- Automated test suites for different platforms
+
 # SngCli
 The SngCli tool is a basic command line tool that has a couple of operating commands each with their own set of command line flags:
 
@@ -46,6 +61,742 @@ decode:
 ```
 
 When encoding this tool can also do audio transcoding to opus, and image transcoding to JPEG. Opus encoding takes a significant amount of time for larger song libraries. The more cpu cores you have, the tool can take advantage of this, and encode multiple songs in parallel speeding up the process significantly.
+
+# Installation
+
+## Automated Test Infrastructure
+
+**Note:** This fork includes automated test infrastructure created with AI assistance. These tests have not been manually verified and should be used with caution:
+
+- **Cross-platform tests**: Located in `tests/` directory
+- **Docker containers**: `Dockerfile` (Linux) and `Dockerfile.windows` (Windows)
+- **Build validation**: `test-windows-build.sh` and other validation scripts
+- **Platform-specific tests**: Organized by platform in subdirectories
+
+### Manual Testing with Your Own Files
+
+The automated tests are a starting point, but you should always test with your own .sng files:
+
+```bash
+# 1. Copy your .sng file to a test folder
+mkdir -p ~/sng-test-input
+cp "/path/to/your/file.sng" ~/sng-test-input/
+
+# 2. Decode and verify
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-test-input \
+  -o ~/sng-test-output
+
+# 3. Check extracted files
+ls -lh ~/sng-test-output/
+
+# 4. Re-encode and verify round-trip
+mkdir -p ~/sng-test-reencode
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i ~/sng-test-output/ \
+  -o ~/sng-test-reencode
+
+# 5. Compare file sizes
+ls -lh ~/sng-test-input/*.sng ~/sng-test-reencode/*.sng
+```
+
+### Running the Automated Test Suite
+
+```bash
+# Make the test script executable
+chmod +x tests/test-installation.sh
+
+# Run the comprehensive test
+./tests/test-installation.sh
+```
+
+## Prerequisites
+
+- **.NET 10.0 SDK** or later
+- **opus-tools** (for Opus audio encoding) - optional, only needed if using `--opusEncode` flag
+
+### Installing .NET SDK
+
+#### macOS
+```bash
+# Using Homebrew (recommended)
+brew install dotnet
+
+# Verify installation
+dotnet --version
+```
+
+#### Windows
+
+##### Method 1: Download installer (recommended)
+Download and install from https://dotnet.microsoft.com/download
+
+##### Method 2: Chocolatey (package manager)
+```powershell
+# Install Chocolatey first (if not already installed)
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install .NET 10.0 SDK
+choco install dotnet-10.0-sdk -y
+```
+
+##### Method 3: Winget (Windows Package Manager)
+```powershell
+# Install .NET 10.0 SDK
+winget install Microsoft.DotNet.SDK.10
+```
+
+##### Method 4: Docker Windows container (for testing)
+```powershell
+# Build Windows container
+docker build -f Dockerfile.windows -t sngtool-windows-test .
+
+# Run tests
+docker run --rm sngtool-windows-test
+```
+
+##### Verify installation
+```powershell
+dotnet --version
+```
+
+#### Linux
+
+##### Ubuntu/Debian (20.04, 22.04, 24.04)
+```bash
+# First, ensure required tools are installed
+sudo apt update
+sudo apt install -y wget lsb-release
+
+# Install .NET 10.0 SDK
+wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt update
+sudo apt install -y dotnet-sdk-10.0
+
+# Verify installation
+dotnet --version
+```
+
+##### Fedora/RHEL (Fedora 38+, RHEL 8+)
+```bash
+# Install .NET 10.0 SDK
+sudo rpm -Uvh https://packages.microsoft.com/config/fedora/$(rpm -E %fedora)/packages-microsoft-prod.rpm
+sudo dnf install dotnet-sdk-10.0
+
+# Verify installation
+dotnet --version
+```
+
+##### Alternative: Install via Snap (all Linux distributions)
+```bash
+# Install .NET SDK via Snap
+sudo snap install dotnet-sdk --classic --channel=10.0
+
+# Or install just the runtime
+sudo snap install dotnet-runtime-10.0
+
+# Verify installation
+dotnet --version
+```
+
+##### Alternative: Manual installation
+```bash
+# Download the .NET SDK binary
+wget https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh
+chmod +x dotnet-install.sh
+./dotnet-install.sh --channel 10.0
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc)
+export DOTNET_ROOT=$HOME/.dotnet
+export PATH=$PATH:$HOME/.dotnet:$HOME/.dotnet/tools
+
+# Verify installation
+dotnet --version
+```
+
+### Installing opus-tools (optional)
+
+Opus encoding is optional but recommended for smaller file sizes. The tool will fall back to original audio formats if opusenc is not available.
+
+#### macOS
+```bash
+brew install opus-tools
+
+# Verify installation
+opusenc --help
+```
+
+#### Windows
+
+##### Method 1: Download installer
+Download from https://opus-codec.org/downloads/
+
+##### Method 2: Chocolatey (package manager)
+```powershell
+choco install opus-tools -y
+```
+
+##### Method 3: Manual installation
+1. Download opus-tools from https://opus-codec.org/downloads/
+2. Extract to a directory (e.g., `C:\Program Files\opus-tools`)
+3. Add to PATH environment variable
+
+##### Method 4: Docker Windows container
+The Docker Windows image includes opus-tools via Chocolatey.
+
+##### Verify installation
+```powershell
+opusenc --help
+```
+
+#### Linux
+
+##### Ubuntu/Debian
+```bash
+sudo apt update
+sudo apt install opus-tools
+
+# Verify installation
+opusenc --help
+```
+
+##### Fedora/RHEL
+```bash
+sudo dnf install opus-tools
+
+# Verify installation
+opusenc --help
+```
+
+##### Arch Linux
+```bash
+sudo pacman -S opus-tools
+
+# Verify installation
+opusenc --help
+```
+
+##### openSUSE
+```bash
+sudo zypper install opus-tools
+
+# Verify installation
+opusenc --help
+```
+
+##### If opus-tools is not available in your distribution's repositories:
+```bash
+# Build from source (requires development tools)
+sudo apt install build-essential autoconf automake libtool pkg-config
+git clone https://gitlab.xiph.org/xiph/opus-tools.git
+cd opus-tools
+./autogen.sh
+./configure
+make
+sudo make install
+
+# Verify installation
+opusenc --help
+```
+
+## Building from Source
+
+### Clone the repository
+```bash
+git clone https://github.com/yourusername/SngFileFormat.git
+cd SngFileFormat
+```
+
+### Build the project
+```bash
+# Build all projects
+cd SngTool
+dotnet build
+
+# Or build just the CLI tool
+dotnet build SngTool.sln
+
+# For development (no self-contained binaries)
+dotnet build -c Debug
+```
+
+### Using the provided build scripts
+
+#### Root directory script (recommended)
+```bash
+# From the repository root
+chmod +x build-macos.sh
+./build-macos.sh
+
+# Executables will be at:
+# - ./SngTool/bin/build/osx-arm64/SngCli (Apple Silicon)
+# - ./SngTool/bin/build/osx-x64/SngCli (Intel Mac)
+```
+
+#### SngTool directory script (alternative)
+```bash
+# From within SngTool directory
+cd SngTool
+chmod +x build-macos.sh
+./build-macos.sh
+
+# Executables will be at:
+# - ./bin/build/osx-arm64/SngCli (Apple Silicon)
+# - ./bin/build/osx-x64/SngCli (Intel Mac)
+```
+
+### Run the tool
+```bash
+# Run directly with dotnet (development)
+cd SngTool/SngCli
+dotnet run -- encode --help
+dotnet run -- decode --help
+
+# Or use the built executable
+./SngTool/bin/build/osx-arm64/SngCli encode --help
+```
+
+### Build standalone executables for distribution
+```bash
+# macOS ARM64 (Apple Silicon)
+dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-arm64 --output ./dist/osx-arm64
+
+# macOS x64 (Intel)
+dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-x64 --output ./dist/osx-x64
+
+# Windows x64
+dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r win-x64 --output ./dist/win-x64
+
+# Linux x64
+dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r linux-x64 --output ./dist/linux-x64
+```
+
+## Quick Start Examples
+
+### Encode a folder of songs to SNG format
+```bash
+# Basic encoding (preserves original audio and image formats)
+SngCli encode --in ./songs --out ./output
+
+# With Opus encoding and JPEG conversion (recommended for size optimization)
+SngCli encode --in ./songs --out ./output --opusEncode --jpegEncode
+
+# With parallel processing (4 threads) and custom bitrate
+SngCli encode --in ./songs --out ./output --threads 4 --opusEncode --opusBitrate 96 --jpegEncode --jpegQuality 85
+
+# Skip existing SNG files and resize album art
+SngCli encode --in ./songs --out ./output --skipExisting --albumResize 512x512
+
+# Encode with verbose output for debugging
+SngCli encode --in ./songs --out ./output --verbose
+```
+
+### Decode SNG files back to folders
+```bash
+# Basic decoding
+SngCli decode --in ./sng_files --out ./extracted_songs
+
+# With parallel processing
+SngCli decode --in ./sng_files --out ./extracted_songs --threads 4
+
+# Decode with verbose output
+SngCli decode --in ./sng_files --out ./extracted_songs --verbose
+```
+
+## Real-World Usage Examples
+
+### Testing with Your Own .sng Files
+
+If you have existing .sng files you want to test with:
+
+```bash
+# Create a test input folder
+mkdir -p ~/sng-test-input
+
+# Copy your .sng file to the test folder
+cp "/path/to/your/file.sng" ~/sng-test-input/
+
+# Decode the file
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-test-input \
+  -o ~/sng-test-output
+
+# Check what was extracted
+ls -lh ~/sng-test-output/
+```
+
+### Round-Trip Test (Encode → Decode → Verify)
+
+A common workflow to verify the tool works correctly:
+
+```bash
+# 1. Start with a .sng file
+cp "/path/to/your/file.sng" /tmp/test-input.sng
+
+# 2. Decode it
+mkdir -p /tmp/decoded
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i /tmp \
+  -o /tmp/decoded
+
+# 3. Re-encode it
+mkdir -p /tmp/reencoded
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i /tmp/decoded/ \
+  -o /tmp/reencoded
+
+# 4. Verify the new .sng file exists and has similar size
+ls -lh /tmp/*.sng
+
+# 5. Decode the new file and compare
+mkdir -p /tmp/roundtrip
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i /tmp \
+  -o /tmp/roundtrip
+
+# Compare file sizes
+ls -lh /tmp/decoded/ /tmp/roundtrip/
+```
+
+### Batch Processing Multiple .sng Files
+
+```bash
+# Create input folder with multiple .sng files
+mkdir -p ~/sng-batch-input
+cp ~/Music/*.sng ~/sng-batch-input/
+
+# Decode all at once
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-batch-input \
+  -o ~/sng-batch-output \
+  -t 4  # Use 4 threads for parallel processing
+
+# Check results
+echo "Total songs processed: $(ls -d ~/sng-batch-output/*/ | wc -l)"
+```
+
+### Converting .sng to a Specific Format
+
+```bash
+# Decode with specific album art size for better performance
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-input \
+  -o ~/sng-output \
+  --albumResize 256x256  # Smaller resolution for faster loading
+```
+
+### Creating a Simple Test .sng File
+
+If you don't have any .sng files yet, create a test one:
+
+```bash
+# Create a test song folder structure
+mkdir -p ~/test-song/audio
+mkdir -p ~/test-song/images
+
+# Copy or create test files
+cp ~/Music/some-song.mp3 ~/test-song/audio/guitar.mp3
+cp ~/Pictures/album-art.jpg ~/test-song/images/album.jpg
+
+# Create a basic song.ini (required)
+cat > ~/test-song/song.ini << EOF
+[Song]
+Title=Test Song
+Artist=Test Artist
+Album=Test Album
+EOF
+
+# Encode the test song
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i ~/test-song \
+  -o ~/test-output \
+  --opusEncode \
+  --jpegEncode \
+  --jpegQuality 75
+
+# Verify the .sng file was created
+ls -lh ~/test-output/*.sng
+```
+
+### Using the Built Executable (macOS)
+
+After building for macOS, use the standalone executable:
+
+```bash
+# Build for Apple Silicon
+dotnet publish SngTool/SngCli/SngCli.csproj \
+  -c Release --self-contained -r osx-arm64 \
+  --output ./dist/osx-arm64
+
+# Use the standalone executable
+./dist/osx-arm64/SngCli encode --help
+./dist/osx-arm64/SngCli decode --help
+
+# Or copy it to a convenient location
+cp ./dist/osx-arm64/SngCli /usr/local/bin/sngcli
+sngcli encode --help
+```
+
+## Platform-Specific Notes
+
+### macOS
+- The tool is fully compatible with macOS (both Intel and Apple Silicon)
+- Use `osx-arm64` for Apple Silicon (M1/M2/M3) or `osx-x64` for Intel Macs
+- Homebrew installation of `opus-tools` is recommended for Opus encoding support
+- The project includes platform-specific handling for executable detection
+
+### Windows
+- Use `win-x64` runtime identifier
+- The tool includes security hardening against unsafe serialization and encoding
+- Windows Defender may flag the executable initially - add it to exclusions if needed
+- Multiple installation methods available:
+  - Direct download from Microsoft
+  - Chocolatey package manager
+  - Winget (Windows Package Manager)
+  - Docker Windows containers (for testing)
+- Windows containers require Windows host with Windows containers enabled
+
+### Linux
+- Use `linux-x64` runtime identifier
+- Tested on Ubuntu, Fedora, Arch, and other major distributions
+- May require additional dependencies for audio/video processing:
+  - Ubuntu/Debian: `sudo apt install libasound2 libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good`
+  - Fedora/RHEL: `sudo dnf install alsa-lib gstreamer1 gstreamer1-plugins-base`
+  - For video processing, GStreamer plugins may be required
+
+## Troubleshooting
+
+### Common Issues
+
+**"Could not find opusenc" error**
+- Install opus-tools as shown in the prerequisites section
+- Or run without `--opusEncode` flag to use original audio formats
+
+**"Permission denied" when running executable**
+```bash
+# Make the executable executable
+chmod +x SngCli
+
+# Or run with dotnet
+dotnet SngTool/SngCli/SngCli.dll encode --help
+```
+
+**Build errors related to .NET version**
+- Ensure you have .NET 10.0 SDK installed: `dotnet --version`
+- Update the SDK if needed: `dotnet update`
+
+**"System.IO.FileNotFoundException" when running**
+- Make sure you're in the correct directory
+- Try building the project first: `dotnet build`
+
+**Linux-specific issues**
+
+**"error while loading shared libraries" on Linux**
+- Install required system dependencies:
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install libc6 libgcc1 libstdc++6 zlib1g
+  
+  # Fedora/RHEL
+  sudo dnf install glibc libgcc libstdc++ zlib
+  ```
+
+**"GStreamer" related errors on Linux**
+- Install GStreamer for audio/video processing:
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+  
+  # Fedora/RHEL
+  sudo dnf install gstreamer1-plugins-base gstreamer1-plugins-good
+  ```
+
+**"lsb_release not found" error on Linux**
+- Install lsb-release before running .NET installation:
+  ```bash
+  sudo apt install lsb-release  # Ubuntu/Debian
+  sudo dnf install redhat-lsb-core  # Fedora/RHEL
+  ```
+
+**Performance issues with large libraries**
+- Use the `--threads` flag to parallelize encoding/decoding
+- Consider using `--skipExisting` to avoid re-encoding existing files
+- Use `--noStatusBar` to reduce CPU usage on resource-constrained systems
+
+### Verifying Installation
+
+#### Quick verification
+```bash
+# Check .NET installation
+dotnet --version
+
+# Check opusenc installation (optional)
+opusenc --help
+
+# Test the tool
+SngCli --version
+SngCli --help
+```
+
+#### Comprehensive installation test
+A test script is provided to verify your installation:
+```bash
+# Make the test script executable
+chmod +x test-installation.sh
+
+# Run the test
+./test-installation.sh
+
+# The script will check:
+# 1. .NET SDK installation and version
+# 2. opusenc availability (optional)
+# 3. Project structure
+# 4. Build success
+# 5. CLI tool functionality
+```
+
+## Security Notes
+
+This project includes security hardening:
+- Disabled unsafe BinaryFormatter serialization
+- Disabled unsafe UTF7 encoding
+- Updated dependencies to address known vulnerabilities (SixLabors.ImageSharp 3.1.12)
+- Cross-platform safe file path handling
+- Input validation and sanitization
+- No external network calls or telemetry
+
+### Dependency Security
+- **SixLabors.ImageSharp**: Updated to 3.1.12 to address CVE-2024-32035, CVE-2024-32036, and other vulnerabilities
+- **BinaryEx**: Version 0.4.0 (latest, no known vulnerabilities)
+- **NLayer/NVorbis**: Custom audio decoders with no external dependencies
+
+## Performance Tips
+
+1. **Parallel Processing**: Use `--threads` to match your CPU core count
+2. **Skip Existing**: Use `--skipExisting` to avoid re-processing unchanged files
+3. **Opus Encoding**: Use `--opusEncode` for significantly smaller file sizes (80-90% reduction)
+4. **JPEG Conversion**: Use `--jpegEncode` with `--jpegQuality 75-85` for good quality/size balance
+5. **Album Resizing**: Use `--albumResize 512x512` for optimal in-game performance
+6. **Disable Status Bar**: Use `--noStatusBar` on headless servers or resource-constrained systems
+
+## Testing and Verification
+
+### Quick Test
+```bash
+# Create a test directory structure
+mkdir -p test_song/{audio,images}
+cp some_audio_file.mp3 test_song/audio/guitar.mp3
+cp some_image.jpg test_song/images/album.jpg
+
+# Encode the test song
+SngCli encode --in ./test_song --out ./test_output --opusEncode --jpegEncode
+
+# Verify the SNG file was created
+ls -la ./test_output/*.sng
+
+# Decode back to verify round-trip
+SngCli decode --in ./test_output --out ./test_decoded --verbose
+
+# Compare original and decoded files
+diff -r test_song test_decoded/test_song
+```
+
+### Docker Testing
+
+#### Linux Container Testing
+If you have Docker installed, you can test the Linux installation in an isolated environment:
+
+```bash
+# Test using the provided Dockerfile
+docker build -t sngtool-test .
+
+# Or test manually in a container
+docker run --rm -it -v $(pwd):/app ubuntu:22.04 bash
+# Inside container:
+apt update && apt install -y wget lsb-release
+wget https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb
+dpkg -i packages-microsoft-prod.deb
+apt update && apt install -y dotnet-sdk-10.0 opus-tools
+cd /app/SngTool
+dotnet build
+dotnet run --project SngCli/SngCli.csproj -- --help
+```
+
+#### Windows Container Testing (Windows host required)
+Windows containers require a Windows host with Windows containers enabled:
+
+```powershell
+# Build Windows container
+docker build -f Dockerfile.windows -t sngtool-windows-test .
+
+# Run tests
+docker run --rm sngtool-windows-test
+
+# Test in interactive Windows container
+docker run -it --rm mcr.microsoft.com/windows/servercore:ltsc2022 powershell
+# Inside container:
+choco install dotnet-10.0-sdk -y
+choco install opus-tools -y
+dotnet --version
+opusenc --help
+```
+
+**Note**: Windows containers cannot run on macOS or Linux Docker hosts. They require:
+- Windows 10/11 Pro/Enterprise or Windows Server 2019/2022
+- Docker Desktop with Windows containers enabled
+- Hyper-V enabled (for Windows 10/11)
+
+### Running Tests
+```bash
+# Build and run tests (if test projects exist)
+dotnet test
+
+# Or run specific test projects
+cd SngTool
+dotnet test SngLib.Tests/SngLib.Tests.csproj
+```
+
+## Development
+
+### Project Structure
+```
+SngFileFormat/
+├── SngTool/                    # Main tool implementation
+│   ├── SngCli/                # Command line interface
+│   ├── SngLib/                # Core SNG format library
+│   ├── SongLib/               # Song processing library
+│   ├── NLayer/                # MP3 decoder library
+│   └── NVorbis/               # Ogg Vorbis decoder library
+├── build-macos.sh             # macOS build script
+└── README.md                  # This file
+```
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+### Code Style
+- Follow existing C# coding conventions
+- Use meaningful variable and method names
+- Add XML documentation comments for public APIs
+- Include unit tests for new functionality
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+- **Issues**: Report bugs or feature requests on GitHub
+- **Documentation**: Refer to this README and the file specification
+- **Community**: Check related GuitarGame_ChartFormats projects for compatibility
 
 # SNG File Specification
 
@@ -291,3 +1042,48 @@ Additionally filenames can contain folders within the song seperated by the '/' 
 - `crowd.{mp3,ogg,opus,wav}`
 - `preview.{mp3,ogg,opus,wav}`
 
+
+## Testing
+
+This fork includes automated test infrastructure created with AI assistance. These tests are provided as-is and have not been manually verified.
+
+### Available Tests
+
+#### Cross-Platform Build Validation
+```bash
+# Test Windows/Linux builds from macOS
+./tests/windows/test-windows-build.sh
+```
+
+#### Docker Container Tests
+```bash
+# Linux Docker container
+docker build -f Dockerfile -t sngtool-linux-test .
+docker run --rm sngtool-linux-test
+
+# Windows Docker container (requires Windows host)
+docker build -f Dockerfile.windows -t sngtool-windows-test .
+docker run --rm sngtool-windows-test
+```
+
+#### Platform-Specific Tests
+- **Linux**: `tests/linux/test-linux-install.sh`
+- **Windows**: `tests/windows/test-windows-install.ps1` (PowerShell) or `tests/windows/test-windows-install.bat` (Batch)
+- **General**: `tests/test-installation.sh`
+
+### Important Notes
+- These tests were generated with AI assistance
+- Manual verification is recommended before production use
+- Test results and validation reports are in `tests/validation/` directory
+- Use caution when running automated tests in production environments
+
+### Test Organization
+```
+tests/
+├── docker/          # Docker container tests
+├── windows/         # Windows-specific tests
+├── linux/           # Linux-specific tests
+├── validation/      # Test validation reports
+├── test-build-simple.sh     # General build tests
+└── test-installation.sh     # General installation tests
+```

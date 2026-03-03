@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <RootNamespace>NVorbis</RootNamespace>
         <Description>A fully managed implementation of a Xiph.org Foundation Ogg Vorbis decoder.</Description>
         <Copyright>Copyright © TechPizza 2024</Copyright>
@@ -24,6 +24,10 @@
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
+        
+        <!-- Security settings -->
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     </PropertyGroup>
 
     <ItemGroup>
