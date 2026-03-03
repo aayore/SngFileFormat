@@ -73,6 +73,43 @@ When encoding this tool can also do audio transcoding to opus, and image transco
 - **Build validation**: `test-windows-build.sh` and other validation scripts
 - **Platform-specific tests**: Organized by platform in subdirectories
 
+### Manual Testing with Your Own Files
+
+The automated tests are a starting point, but you should always test with your own .sng files:
+
+```bash
+# 1. Copy your .sng file to a test folder
+mkdir -p ~/sng-test-input
+cp "/path/to/your/file.sng" ~/sng-test-input/
+
+# 2. Decode and verify
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-test-input \
+  -o ~/sng-test-output
+
+# 3. Check extracted files
+ls -lh ~/sng-test-output/
+
+# 4. Re-encode and verify round-trip
+mkdir -p ~/sng-test-reencode
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i ~/sng-test-output/ \
+  -o ~/sng-test-reencode
+
+# 5. Compare file sizes
+ls -lh ~/sng-test-input/*.sng ~/sng-test-reencode/*.sng
+```
+
+### Running the Automated Test Suite
+
+```bash
+# Make the test script executable
+chmod +x tests/test-installation.sh
+
+# Run the comprehensive test
+./tests/test-installation.sh
+```
+
 ## Prerequisites
 
 - **.NET 10.0 SDK** or later
@@ -368,6 +405,140 @@ SngCli decode --in ./sng_files --out ./extracted_songs --threads 4
 
 # Decode with verbose output
 SngCli decode --in ./sng_files --out ./extracted_songs --verbose
+```
+
+## Real-World Usage Examples
+
+### Testing with Your Own .sng Files
+
+If you have existing .sng files you want to test with:
+
+```bash
+# Create a test input folder
+mkdir -p ~/sng-test-input
+
+# Copy your .sng file to the test folder
+cp "/path/to/your/file.sng" ~/sng-test-input/
+
+# Decode the file
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-test-input \
+  -o ~/sng-test-output
+
+# Check what was extracted
+ls -lh ~/sng-test-output/
+```
+
+### Round-Trip Test (Encode → Decode → Verify)
+
+A common workflow to verify the tool works correctly:
+
+```bash
+# 1. Start with a .sng file
+cp "/path/to/your/file.sng" /tmp/test-input.sng
+
+# 2. Decode it
+mkdir -p /tmp/decoded
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i /tmp \
+  -o /tmp/decoded
+
+# 3. Re-encode it
+mkdir -p /tmp/reencoded
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i /tmp/decoded/ \
+  -o /tmp/reencoded
+
+# 4. Verify the new .sng file exists and has similar size
+ls -lh /tmp/*.sng
+
+# 5. Decode the new file and compare
+mkdir -p /tmp/roundtrip
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i /tmp \
+  -o /tmp/roundtrip
+
+# Compare file sizes
+ls -lh /tmp/decoded/ /tmp/roundtrip/
+```
+
+### Batch Processing Multiple .sng Files
+
+```bash
+# Create input folder with multiple .sng files
+mkdir -p ~/sng-batch-input
+cp ~/Music/*.sng ~/sng-batch-input/
+
+# Decode all at once
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-batch-input \
+  -o ~/sng-batch-output \
+  -t 4  # Use 4 threads for parallel processing
+
+# Check results
+echo "Total songs processed: $(ls -d ~/sng-batch-output/*/ | wc -l)"
+```
+
+### Converting .sng to a Specific Format
+
+```bash
+# Decode with specific album art size for better performance
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll decode \
+  -i ~/sng-input \
+  -o ~/sng-output \
+  --albumResize 256x256  # Smaller resolution for faster loading
+```
+
+### Creating a Simple Test .sng File
+
+If you don't have any .sng files yet, create a test one:
+
+```bash
+# Create a test song folder structure
+mkdir -p ~/test-song/audio
+mkdir -p ~/test-song/images
+
+# Copy or create test files
+cp ~/Music/some-song.mp3 ~/test-song/audio/guitar.mp3
+cp ~/Pictures/album-art.jpg ~/test-song/images/album.jpg
+
+# Create a basic song.ini (required)
+cat > ~/test-song/song.ini << EOF
+[Song]
+Title=Test Song
+Artist=Test Artist
+Album=Test Album
+EOF
+
+# Encode the test song
+dotnet SngTool/SngCli/bin/Debug/net10.0/SngCli.dll encode \
+  -i ~/test-song \
+  -o ~/test-output \
+  --opusEncode \
+  --jpegEncode \
+  --jpegQuality 75
+
+# Verify the .sng file was created
+ls -lh ~/test-output/*.sng
+```
+
+### Using the Built Executable (macOS)
+
+After building for macOS, use the standalone executable:
+
+```bash
+# Build for Apple Silicon
+dotnet publish SngTool/SngCli/SngCli.csproj \
+  -c Release --self-contained -r osx-arm64 \
+  --output ./dist/osx-arm64
+
+# Use the standalone executable
+./dist/osx-arm64/SngCli encode --help
+./dist/osx-arm64/SngCli decode --help
+
+# Or copy it to a convenient location
+cp ./dist/osx-arm64/SngCli /usr/local/bin/sngcli
+sngcli encode --help
 ```
 
 ## Platform-Specific Notes
