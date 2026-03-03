@@ -18,8 +18,14 @@ case "$DETECTED_ARCH" in
 esac
 
 # Parse command line arguments
-BUILD_ARM64=true
-BUILD_X64=true
+# Default: build only the detected architecture
+if [ "$DEFAULT_ARCH" = "arm64" ]; then
+    BUILD_ARM64=true
+    BUILD_X64=false
+else
+    BUILD_ARM64=false
+    BUILD_X64=true
+fi
 
 for arg in "$@"; do
     case $arg in
