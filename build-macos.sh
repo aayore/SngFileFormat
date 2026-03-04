@@ -27,6 +27,8 @@ else
     BUILD_X64=true
 fi
 
+SINGLE_FILE=false
+
 for arg in "$@"; do
     case $arg in
         --arch=*)
@@ -51,6 +53,9 @@ for arg in "$@"; do
                     ;;
             esac
             ;;
+        --single-file)
+            SINGLE_FILE=true
+            ;;
         --help|-h)
             echo "Usage: build-macos.sh [options]"
             echo ""
@@ -58,6 +63,7 @@ for arg in "$@"; do
             echo "  --arch=<type>  Build for specific architecture"
             echo "                 Valid values: arm64, x64, all"
             echo "                 Default: arm64 on Apple Silicon, x64 on Intel"
+            echo "  --single-file  Create single-file standalone executable"
             echo "  --help, -h     Show this help message"
             exit 0
             ;;
@@ -72,13 +78,21 @@ done
 # Build for macOS ARM64 (Apple Silicon)
 if [ "$BUILD_ARM64" = true ]; then
     echo "Building for macOS ARM64..."
-    dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-arm64 --output ./SngTool/bin/build/osx-arm64
+    if [ "$SINGLE_FILE" = true ]; then
+        dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-arm64 --output ./SngTool/bin/build/osx-arm64 /p:PublishSingleFile=true
+    else
+        dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-arm64 --output ./SngTool/bin/build/osx-arm64
+    fi
 fi
 
 # Also build for macOS x64 (Intel) for compatibility
 if [ "$BUILD_X64" = true ]; then
     echo "Building for macOS x64..."
-    dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-x64 --output ./SngTool/bin/build/osx-x64
+    if [ "$SINGLE_FILE" = true ]; then
+        dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-x64 --output ./SngTool/bin/build/osx-x64 /p:PublishSingleFile=true
+    else
+        dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-x64 --output ./SngTool/bin/build/osx-x64
+    fi
 fi
 
 echo "Build complete!"

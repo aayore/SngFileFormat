@@ -332,6 +332,17 @@ dotnet build -c Debug
 chmod +x build-macos.sh
 ./build-macos.sh
 
+# Options:
+#   --arch=<type>  Build for specific architecture (arm64, x64, all)
+#   --single-file  Create single-file standalone executable
+#   --help         Show help message
+
+# Examples:
+# ./build-macos.sh                    # Build detected architecture only (arm64 on Apple Silicon)
+# ./build-macos.sh --arch=x64         # Build only x64 variant
+# ./build-macos.sh --arch=all         # Build both arm64 and x64
+# ./build-macos.sh --single-file      # Create single-file executable
+
 # Executables will be at:
 # - ./SngTool/bin/build/osx-arm64/SngCli (Apple Silicon)
 # - ./SngTool/bin/build/osx-x64/SngCli (Intel Mac)
@@ -374,6 +385,49 @@ dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r win-x
 # Linux x64
 dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r linux-x64 --output ./dist/linux-x64
 ```
+
+### Build single-file standalone executables
+
+The single-file option creates a standalone executable without external dependencies, making it easy to install:
+
+```bash
+# macOS ARM64 (Apple Silicon) - single file
+./build-macos.sh --arch=arm64 --single-file
+
+# macOS x64 (Intel) - single file
+./build-macos.sh --arch=x64 --single-file
+
+# Or use dotnet publish directly
+dotnet publish SngTool/SngCli/SngCli.csproj -c Release --self-contained -r osx-arm64 --output ./dist/osx-arm64 /p:PublishSingleFile=true
+```
+
+### Installing to your PATH
+
+#### macOS/Linux: Copy to ~/bin or /usr/local/bin
+
+```bash
+# Using ~/bin (user-local, no sudo required)
+cp ./SngTool/bin/build/osx-arm64/SngCli ~/bin/sngcli
+# Add ~/bin to PATH in ~/.zshrc or ~/.bashrc: export PATH="$HOME/bin:$PATH"
+
+# Using /usr/local/bin (system-wide)
+sudo cp ./SngTool/bin/build/osx-arm64/SngCli /usr/local/bin/sngcli
+
+# Verify installation
+which sngcli
+sngcli --version
+```
+
+#### macOS: Using ~/.local/bin (as shown in README)
+
+If you have `~/.local/bin` in your PATH:
+
+```bash
+cp ./SngTool/bin/build/osx-arm64/SngCli ~/.local/bin/sngcli
+sngcli --version
+```
+
+**Note**: The single-file build creates a standalone executable (~80MB) that doesn't require any external DLLs. The regular self-contained build requires all DLL files to be in the same directory as the executable.
 
 ## Quick Start Examples
 
